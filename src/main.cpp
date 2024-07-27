@@ -87,8 +87,17 @@ Button_eSPI *buttons[16] = {0};
 uint8_t curOperation = 0;   // 0 = keine, 1 +, 2 -, 3 *, 4 /
 float n1=0;
 float n2=0;
-String num="";
+String num="0";
 
+
+void draw()
+{
+  tft.setFreeFont(&DSEG7_Classic_Bold_24);
+  tft.setTextColor(TFT_WHITE, DARKBLUE);
+  tft.fillRoundRect(marginX, 30, screenWidth - 2 * marginX, 40, 7, DARKBLUE);
+  tft.setCursor(screenWidth - marginX - 5 - tft.textWidth(num), 62);
+  tft.print(num);
+}
 
 void initDraw()
 {
@@ -120,24 +129,19 @@ void initDraw()
           posX = marginX + (buttonWidth * j) + (marginX * j);
           labelBuff[0] = buttonLabels[i][j];
           buttons[bnCount]->initButtonUL(&tft, posX, posY, buttonWidth, buttonHeight, BACK_COLOR, buttonColors[i][j], TFT_WHITE, labelBuff, &FreeMonoBold12pt7b);
-          buttons[bnCount]->setLabelDatum(0, 2, MC_DATUM);
+          buttons[bnCount]->setLabelDatum(-1, 2, MC_DATUM);
           buttons[bnCount]->drawButton();
           bnCount++;
       }
   }
 }
 
-void draw()
+void keyHandler(char key) 
 {
-  tft.setFreeFont(&DSEG7_Classic_Bold_24);
-  tft.setTextColor(TFT_WHITE, DARKBLUE);
-  tft.fillRoundRect(marginX, 30, screenWidth - 2 * marginX, 40, 7, DARKBLUE);
-  tft.setCursor(marginX + 5, 62);
-  tft.print(num);
-}
 
-void keyPressed(char key) 
-{
+  float r;
+  int p;
+
   switch(key) 
   {
     case '+':
@@ -145,20 +149,45 @@ void keyPressed(char key)
       n1 = num.toFloat();
       num = "";
       break;
+    case '-':
+      curOperation = 2;
+      n1 = num.toFloat();
+      num = "";
+      break;
+    case '*':
+      curOperation = 3;
+      n1 = num.toFloat();
+      num = "";
+      break;
+    case '/':
+      curOperation = 4;
+      n1 = num.toFloat();
+      num = "";
+      break;
     case '=':
       switch(curOperation) 
       {
         case 1:
-          float r = n1 + num.toFloat(); 
-          num = String(r); 
-          n1 = num.toFloat();
-          int p = r * 10.00;
-          if(p % 10 == 0)
-          num = String(p / 10);
+          r = n1 + num.toFloat(); 
+          break;
+        case 2:
+          r = n1 - num.toFloat(); 
+          break;
+        case 3:
+          r = n1 * num.toFloat(); 
+          break;
+        case 4:
+          r = n1 / num.toFloat(); 
           break;
       }
+      num = String(r); 
+      n1 = num.toFloat();
+      p = r * 10.00;
+      if(p % 10 == 0)
+      num = String(p / 10);
       break;
     default:
+      if(num.equals("0")) num = "";
       num = num + key;
   }
 
@@ -184,7 +213,7 @@ void checkTouched(TS_Point p)
         row = i / 4;
         Serial.print("pressed: ");
         Serial.println(buttonLabels[row][col]);
-        keyPressed(buttonLabels[row][col]);
+        keyHandler(buttonLabels[row][col]);
         break;
       }
     }
@@ -236,14 +265,9 @@ void setup()
 
   // Draw the calculator screen
   initDraw();
-
-  // bnCancel.initButtonUL(&tft, 50, 50 , 150, 40, mainBgColor, TFT_SILVER, TFT_RED, bnCancelTxT, &FreeMonoBold12pt7b);
-  // bnCancel.setLabelDatum(0, 2, MC_DATUM);
-  // bnCancel.drawButton();
+  // Draw the init result 0
+  draw();
 }
-
-
-
 
 
 TS_Point nullPoint = TS_Point();
