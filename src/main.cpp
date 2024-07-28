@@ -25,9 +25,21 @@
 //
 //https://github.com/Bodmer/TFT_eSPI
 
+// ----------------------------
+// Smartdebug
+// ----------------------------
+#include "SmartDebug.h"
+
+// ----------------------------
+// GFX project fonts
+// ----------------------------
 #include "7seg.h"
 #include "orbitron.h"
+
 #include "Button_eSPI.h"
+// A library for button functionality in TFT_eSpi projects
+//
+//https://github.com/Bodmer/TFT_eSPI/Extensions
 
 // ----------------------------
 // Touch Screen pins
@@ -50,7 +62,7 @@ const uint16_t TS_MAXY = 3700;
 // ----------------------------
 
 // Objects
-SPIClass mySpi = SPIClass(VSPI);                  // SPI for touch with non default SPI pins
+SPIClass mySpi = SPIClass(VSPI);          // SPI for touch with non default SPI pins
 XPT2046_Touchscreen ts(XPT2046_CS, XPT2046_IRQ);
 TFT_eSPI tft = TFT_eSPI();
 
@@ -58,7 +70,7 @@ TFT_eSPI tft = TFT_eSPI();
 const int pwmFreq = 5000;
 const int pwmResolution = 8;
 const int pwmLedChannelTFT = 0;
-const uint32_t pwmDuty = 100;     // Set brightness, max 255
+const uint32_t pwmDuty = 100;             // Set brightness, max 255
 
 // Display constants
 const uint16_t screenWidth = tft.getViewportWidth();
@@ -79,27 +91,91 @@ const uint8_t buttonWidth = 38;
 const uint8_t buttonHeight = 45; 
 const uint8_t bnRowsCount = 4;
 const uint8_t bnColsCount = 5;
-// Start position button field
+// Start position to draw the button field
 const uint8_t fromTop = screenHeight - marginX - bnRowsCount * buttonHeight - (bnRowsCount - 1) * buttonSpace; 
 
+// Buttons
 char buttonLabels[bnRowsCount][bnColsCount]={{'S','7','8','9','/'},{'R','4','5','6','*'},{'P','1','2','3','-'},{'C','0','.','=','+'}};
 short buttonColors[bnRowsCount][bnColsCount]={{C3,C1,C1,C1,C3},{C3,C1,C1,C1,C3},{C3,C1,C1,C1,C3},{C3,C1,C3,C3,C3}};
 Button_eSPI *buttons[bnRowsCount * bnColsCount] = {0};
 
+// Calculator variables
 uint8_t curOperation = 0;   // 0 = keine, 1 +, 2 -, 3 *, 4 /
-float n1 = 0;
+float n1 = 0;               // Variable to compute the result
 String num = "0";           // Calculators result string
 
 
+
+// Definition of functions
+void draw();
+void initDraw();
+void keyHandler(char key);
+void checkTouched(TS_Point p);
+void checkReleased();
+
+/*
+  Main setup
+*/
+void setup() 
+{
+  DEBUG_BEGIN(115200);
+
+  // Start the SPI for the touch screen and init the TS library
+  mySpi.begin(XPT2046_CLK, XPT2046_MISO, XPT2046_MOSI, XPT2046_CS);
+  ts.begin(mySpi);
+  ts.setRotation(0);
+  DEBUG_PRINTLN("Initialize touch done...");
+
+  // Initialize the TFT display
+  tft.init();
+  tft.setRotation(0); 
+  tft.fillScreen(BACK_COLOR);
+  DEBUG_PRINTLN("Initialize TFT done...");
+
+  // Initialize PWM brightness
+  ledcSetup(pwmLedChannelTFT, pwmFreq, pwmResolution);
+  ledcAttachPin(TFT_BL, pwmLedChannelTFT);
+  ledcWrite(pwmLedChannelTFT, pwmDuty);
+
+  // Draw the calculator screen
+  initDraw();
+  // Draw the init result 0
+  draw();
+}
+
+/*
+  Main loop
+*/
+void loop() 
+{
+  if (ts.tirqTouched() && ts.touched()) 
+  {
+     TS_Point p = ts.getPoint();      // get the touch point
+     checkTouched(p);                 // check if the touch point in range of one button
+     delay(100);
+  }
+  else 
+  {
+    checkReleased();                  // check if any button in state pressed, but now released
+  }
+}
+
+
+/*
+  Draw the result field
+*/
 void draw()
 {
   tft.setFreeFont(&DSEG7_Classic_Bold_24);
   tft.setTextColor(TFT_WHITE, DARKBLUE);
   tft.fillRoundRect(marginX, 30, screenWidth - 2 * marginX, 40, 7, DARKBLUE);
-  tft.setCursor(screenWidth - marginX - 5 - tft.textWidth(num), 62);
+  tft.setCursor(screenWidth - marginX - 7 - tft.textWidth(num), 62);
   tft.print(num);
 }
 
+/*
+  Draw the initialized display of calculator
+*/
 void initDraw()
 {
   tft.fillRect(screenWidth - 53, 8, 8, 15, 0x52AA);
@@ -136,6 +212,9 @@ void initDraw()
   }
 }
 
+/*
+  Handle the pressed key
+*/
 void keyHandler(char key) 
 {
   float r;
@@ -211,7 +290,12 @@ void keyHandler(char key)
   draw();
 }
 
-
+/*
+  Check if the current touch point is in range of one button.
+  If it, then to pass the label char of this button to the key handler and update his
+  fill color to state pressed.
+  If not, then do nothing.
+*/
 void checkTouched(TS_Point p)
 {
   uint8_t row, col;
@@ -228,81 +312,30 @@ void checkTouched(TS_Point p)
         buttons[i]->drawButton();
         col = i % bnColsCount;
         row = i / bnColsCount;
-        // Serial.println(i);
-        // Serial.print("Col: ");
-        // Serial.println(col);
-        // Serial.print("Row: ");
-        // Serial.println(row);
-        Serial.print("pressed: ");
-        Serial.println(buttonLabels[row][col]);
+        DEBUG_PRINTLN_VALUE("Col", col);
+        DEBUG_PRINTLN_VALUE("Row", row);
+        DEBUG_PRINTLN_VALUE("Pressed key", buttonLabels[row][col]);
         keyHandler(buttonLabels[row][col]);
         break;
       }
     }
-    else 
-    {
-      if(buttons[i]->isPressed()) 
-      {
-        buttons[i]->press(false);
-        buttons[i]->drawButton(false);
-        Serial.println("not pressed");
-        break;
-      }
-    }
   }
-
-  // for( auto & button : buttonArray) 
-  // {
-  //     if(px > button.xStart && 
-  //        px < button.xStart + button.width &&
-  //        py > button.yStart && 
-  //        py < button.yStart + button.height) 
-  //     {
-  //        tft.drawString(String)
-  //     }
-
-  // }
 }
 
-
-void setup() 
+/*
+  Check if any button in the button field has the state pressed.
+  If found a pressed button then release it and update his fill color to state unpressed.
+*/
+void checkReleased()
 {
-  Serial.begin(115200);
-  while(!Serial);
-
-  // Start the SPI for the touch screen and init the TS library
-  mySpi.begin(XPT2046_CLK, XPT2046_MISO, XPT2046_MOSI, XPT2046_CS);
-  ts.begin(mySpi);
-  ts.setRotation(0);
-
-  // Initialize the TFT display
-  tft.init();
-  tft.setRotation(0); 
-  tft.fillScreen(BACK_COLOR);
-
-  // Initialize PWM brightness
-  ledcSetup(pwmLedChannelTFT, pwmFreq, pwmResolution);
-  ledcAttachPin(TFT_BL, pwmLedChannelTFT);
-  ledcWrite(pwmLedChannelTFT, pwmDuty);
-
-  // Draw the calculator screen
-  initDraw();
-  // Draw the init result 0
-  draw();
-}
-
-
-TS_Point nullPoint = TS_Point();
-void loop() 
-{
-
-  if (ts.tirqTouched() && ts.touched()) {
-     TS_Point p = ts.getPoint();
-     checkTouched(p);
-     delay(100);
-  }
-  else 
+  for( auto & button : buttons) 
   {
-    checkTouched(nullPoint);
+    if(button->isPressed())
+    {
+      button->press(false);
+      button->drawButton();
+      DEBUG_PRINTLN("Released...");
+      break;
+    }
   }
 }
