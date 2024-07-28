@@ -2,6 +2,10 @@
   TouchCalculator V 1.0
   Touchscreen Calculator auf Sunton ESP32-2432S028R
 
+  Weiterentwicklung nach einer Vorlage von VolosR
+  https://www.youtube.com/watch?v=vGuZ36mgAT4
+  https://github.com/VolosR/TTgocalc
+
   Oberoner21, Version 1.0 vom 27.07.2024
 */
 
@@ -101,7 +105,8 @@ Button_eSPI *buttons[bnRowsCount * bnColsCount] = {0};
 
 // Calculator variables
 uint8_t curOperation = 0;   // 0 = keine, 1 +, 2 -, 3 *, 4 /
-float n1 = 0;               // Variable to compute the result
+float n1 = 0;               // Variable to compute the result 
+float m1 = 0;               // Memory value
 String num = "0";           // Calculators result string
 
 
@@ -171,6 +176,13 @@ void draw()
   tft.fillRoundRect(marginX, 30, screenWidth - 2 * marginX, 40, 7, DARKBLUE);
   tft.setCursor(screenWidth - marginX - 7 - tft.textWidth(num), 62);
   tft.print(num);
+
+  if(m1 != 0)
+  {
+    tft.setFreeFont(&FreeMonoBold12pt7b);
+    tft.setCursor(marginX + 7, 50);
+    tft.print("M");  
+  }
 }
 
 /*
@@ -254,10 +266,14 @@ void keyHandler(char key)
       num = "0";
       break;
     case 'S':
+      m1 = num.toFloat();
       break;
     case 'R':
+      p = m1 * 10.00;
+      if(p % 10 == 0) num = String(p / 10);
       break;
     case 'P':
+      m1 = m1 + num.toFloat();
       break;
 
     case '=':
@@ -283,6 +299,7 @@ void keyHandler(char key)
       num = String(p / 10);
       break;
     default:
+      // all number keys
       if(num.equals("0")) num = "";
       num = num + key;
   }
