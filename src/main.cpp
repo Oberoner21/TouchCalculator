@@ -25,6 +25,9 @@
 //
 //https://github.com/Bodmer/TFT_eSPI
 
+#include "7seg.h"
+#include "orbitron.h"
+#include "Button_eSPI.h"
 
 // ----------------------------
 // Touch Screen pins
@@ -46,15 +49,10 @@ const uint16_t TS_MAXY = 3700;
 
 // ----------------------------
 
-#include "7seg.h"
-#include "orbitron.h"
-#include "Button_eSPI.h"
-
 // Objects
 SPIClass mySpi = SPIClass(VSPI);                  // SPI for touch with non default SPI pins
 XPT2046_Touchscreen ts(XPT2046_CS, XPT2046_IRQ);
 TFT_eSPI tft = TFT_eSPI();
-Button_eSPI bnCancel = Button_eSPI();
 
 // PWM constants
 const int pwmFreq = 5000;
@@ -65,29 +63,29 @@ const uint32_t pwmDuty = 100;     // Set brightness, max 255
 // Display constants
 const uint16_t screenWidth = tft.getViewportWidth();
 const uint16_t screenHeight = tft.getViewportHeight();
-char bnCancelTxT[] = {"Abbruch"};
 
 // Colors
 const uint16_t TFT_GREY = 0x5AEB; 
-const uint16_t DARKBLUE = 0x22AE;
-const uint16_t C1 = 0x02CD;
-const uint16_t C2 = 0xE280;
-const uint16_t C3 = 0x6005;
-const uint16_t BACK_COLOR = TFT_WHITE;
+const uint16_t DARKBLUE = 0x22AE;         // Fill color calculators result area
+const uint16_t C1 = 0x02CD;               // Unpressed button fill color for number chars
+const uint16_t C2 = 0xE280;               // Pressed button fill color for all buttons
+const uint16_t C3 = 0x6005;               // Unpresses button fill color for operater chars
+const uint16_t BACK_COLOR = TFT_WHITE;    // Calculators background color 
 
 // Calculator
 const uint8_t marginX = 12;
 const uint8_t buttonWidth = 45;
 const uint8_t buttonHeight = 45; 
+const uint8_t bnRowsCount = 4;
+const uint8_t bnColsCount = 4;
 
-char buttonLabels[4][4]={{'7','8','9','/'},{'4','5','6','*'},{'1','2','3','-'},{'0','.','=','+'}};
-short buttonColors[4][4]={{C1,C1,C1,C3},{C1,C1,C1,C3},{C1,C1,C1,C3},{C1,C3,C3,C3}};
-Button_eSPI *buttons[16] = {0};
+char buttonLabels[bnRowsCount][bnColsCount]={{'7','8','9','/'},{'4','5','6','*'},{'1','2','3','-'},{'0','.','=','+'}};
+short buttonColors[bnRowsCount][bnColsCount]={{C1,C1,C1,C3},{C1,C1,C1,C3},{C1,C1,C1,C3},{C1,C3,C3,C3}};
+Button_eSPI *buttons[bnRowsCount * bnColsCount] = {0};
 
 uint8_t curOperation = 0;   // 0 = keine, 1 +, 2 -, 3 *, 4 /
-float n1=0;
-float n2=0;
-String num="0";
+float n1 = 0;
+String num = "0";           // Calculators result string
 
 
 void draw()
@@ -120,10 +118,10 @@ void initDraw()
   uint16_t posX, posY;
   char labelBuff[2];
   labelBuff[1] = 0;
-  for(uint8_t i=0; i<4; i++)
+  for(uint8_t i=0; i<bnRowsCount; i++)
   {
       posY = fromTop + (buttonHeight * i)+(marginX * i);
-      for(int j =0; j<4; j++)
+      for(int j =0; j<bnColsCount; j++)
       { 
           buttons[bnCount] = new Button_eSPI();
           posX = marginX + (buttonWidth * j) + (marginX * j);
@@ -209,8 +207,8 @@ void checkTouched(TS_Point p)
       {
         buttons[i]->press(true);
         buttons[i]->drawButton(true);
-        col = i % 4;
-        row = i / 4;
+        col = i % bnColsCount;
+        row = i / bnRowsCount;
         Serial.print("pressed: ");
         Serial.println(buttonLabels[row][col]);
         keyHandler(buttonLabels[row][col]);
