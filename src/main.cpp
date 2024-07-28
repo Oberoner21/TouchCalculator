@@ -109,9 +109,7 @@ float n1 = 0;               // Variable to compute the result
 float m1 = 0;               // Memory value
 String num = "0";           // Calculators result string
 
-
-
-// Definition of functions
+/* Function header */
 void draw();
 void initDraw();
 void keyHandler(char key);
