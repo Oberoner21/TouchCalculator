@@ -151,15 +151,15 @@ void setup()
 */
 void loop() 
 {
-  if (ts.tirqTouched() && ts.touched()) 
+  if (ts.tirqTouched() && ts.touched())   // screen touched?
   {
-     TS_Point p = ts.getPoint();      // get the touch point
-     checkTouched(p);                 // check if the touch point in range of one button
+     TS_Point p = ts.getPoint();          // get the touch point
+     checkTouched(p);                     // check if the touch point in range of one button
      delay(100);
   }
   else 
   {
-    checkReleased();                  // check if any button in state pressed, but now released
+    checkReleased();                      // check if is any button in state pressed, but now released
   }
 }
 
@@ -316,23 +316,27 @@ void keyHandler(char key)
 void checkTouched(TS_Point p)
 {
   uint8_t row, col;
+
+  // map the touchpoint p into calibratet screen coordinats
   uint16_t px = map(p.x, TS_MINX, TS_MAXX, 0, screenWidth);
   uint16_t py = map(p.y, TS_MINY, TS_MAXY, 0, screenHeight);
 
+  // any button touched?
   for(uint8_t i=0; i < bnColsCount*bnRowsCount; i++)
   {
     if(buttons[i]->contains(px, py))
     {
+      // if button unpressed?
       if(!buttons[i]->isPressed()) 
       {
-        buttons[i]->press(true);
-        buttons[i]->drawButton();
-        col = i % bnColsCount;
+        buttons[i]->press(true);            // set button to state pressed
+        buttons[i]->drawButton();           // draw button in pressed fill color
+        col = i % bnColsCount;              // compute buttons colum an row in the button field
         row = i / bnColsCount;
         DEBUG_PRINTLN_VALUE("Col", col);
         DEBUG_PRINTLN_VALUE("Row", row);
         DEBUG_PRINTLN_VALUE("Pressed key", buttonLabels[row][col]);
-        keyHandler(buttonLabels[row][col]);
+        keyHandler(buttonLabels[row][col]); // get the button label char and transfer it to key handler
         break;
       }
     }
