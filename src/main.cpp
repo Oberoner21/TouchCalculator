@@ -73,14 +73,17 @@ const uint16_t C3 = 0x6005;               // Unpresses button fill color for ope
 const uint16_t BACK_COLOR = TFT_WHITE;    // Calculators background color 
 
 // Calculator
-const uint8_t marginX = 12;
-const uint8_t buttonWidth = 45;
+const uint8_t marginX = 11;
+const uint8_t buttonSpace = 7;
+const uint8_t buttonWidth = 38;
 const uint8_t buttonHeight = 45; 
 const uint8_t bnRowsCount = 4;
-const uint8_t bnColsCount = 4;
+const uint8_t bnColsCount = 5;
+// Start position button field
+const uint8_t fromTop = screenHeight - marginX - bnRowsCount * buttonHeight - (bnRowsCount - 1) * buttonSpace; 
 
-char buttonLabels[bnRowsCount][bnColsCount]={{'7','8','9','/'},{'4','5','6','*'},{'1','2','3','-'},{'0','.','=','+'}};
-short buttonColors[bnRowsCount][bnColsCount]={{C1,C1,C1,C3},{C1,C1,C1,C3},{C1,C1,C1,C3},{C1,C3,C3,C3}};
+char buttonLabels[bnRowsCount][bnColsCount]={{'S','7','8','9','/'},{'R','4','5','6','*'},{'P','1','2','3','-'},{'C','0','.','=','+'}};
+short buttonColors[bnRowsCount][bnColsCount]={{C3,C1,C1,C1,C3},{C3,C1,C1,C1,C3},{C3,C1,C1,C1,C3},{C3,C1,C3,C3,C3}};
 Button_eSPI *buttons[bnRowsCount * bnColsCount] = {0};
 
 uint8_t curOperation = 0;   // 0 = keine, 1 +, 2 -, 3 *, 4 /
@@ -113,20 +116,19 @@ void initDraw()
   tft.fillRoundRect(marginX, 30, screenWidth - 2 * marginX, 40, 7, DARKBLUE);
 
   // Button field
-  const uint8_t fromTop = 96;
   uint8_t bnCount = 0;
   uint16_t posX, posY;
   char labelBuff[2];
   labelBuff[1] = 0;
   for(uint8_t i=0; i<bnRowsCount; i++)
   {
-      posY = fromTop + (buttonHeight * i)+(marginX * i);
+      posY = fromTop + (buttonHeight * i)+(buttonSpace * i);
       for(int j =0; j<bnColsCount; j++)
       { 
           buttons[bnCount] = new Button_eSPI();
-          posX = marginX + (buttonWidth * j) + (marginX * j);
+          posX = marginX + (buttonWidth * j) + (buttonSpace * j);
           labelBuff[0] = buttonLabels[i][j];
-          buttons[bnCount]->initButtonUL(&tft, posX, posY, buttonWidth, buttonHeight, BACK_COLOR, buttonColors[i][j], TFT_WHITE, labelBuff, &FreeMonoBold12pt7b);
+          buttons[bnCount]->initButtonUL(&tft, posX, posY, buttonWidth, buttonHeight, BACK_COLOR, buttonColors[i][j], C2, TFT_WHITE, labelBuff, &FreeMonoBold12pt7b);
           buttons[bnCount]->setLabelDatum(-1, 2, MC_DATUM);
           buttons[bnCount]->drawButton();
           bnCount++;
@@ -136,7 +138,6 @@ void initDraw()
 
 void keyHandler(char key) 
 {
-
   float r;
   int p;
 
@@ -148,9 +149,16 @@ void keyHandler(char key)
       num = "";
       break;
     case '-':
-      curOperation = 2;
-      n1 = num.toFloat();
-      num = "";
+      if(num.equals("0") || num.equals("")) 
+      {
+        num = "-";
+      } 
+      else 
+      {
+        curOperation = 2;
+        n1 = num.toFloat();
+        num = "";
+      }
       break;
     case '*':
       curOperation = 3;
@@ -162,6 +170,17 @@ void keyHandler(char key)
       n1 = num.toFloat();
       num = "";
       break;
+    case 'C':
+      curOperation = 0;
+      num = "0";
+      break;
+    case 'S':
+      break;
+    case 'R':
+      break;
+    case 'P':
+      break;
+
     case '=':
       switch(curOperation) 
       {
@@ -193,22 +212,27 @@ void keyHandler(char key)
 }
 
 
-void checkTouched(TS_Point p) 
+void checkTouched(TS_Point p)
 {
   uint8_t row, col;
   uint16_t px = map(p.x, TS_MINX, TS_MAXX, 0, screenWidth);
   uint16_t py = map(p.y, TS_MINY, TS_MAXY, 0, screenHeight);
 
-  for(uint8_t i=0; i<16; i++)
+  for(uint8_t i=0; i < bnColsCount*bnRowsCount; i++)
   {
     if(buttons[i]->contains(px, py))
     {
       if(!buttons[i]->isPressed()) 
       {
         buttons[i]->press(true);
-        buttons[i]->drawButton(true);
+        buttons[i]->drawButton();
         col = i % bnColsCount;
-        row = i / bnRowsCount;
+        row = i / bnColsCount;
+        // Serial.println(i);
+        // Serial.print("Col: ");
+        // Serial.println(col);
+        // Serial.print("Row: ");
+        // Serial.println(row);
         Serial.print("pressed: ");
         Serial.println(buttonLabels[row][col]);
         keyHandler(buttonLabels[row][col]);

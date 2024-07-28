@@ -11,38 +11,38 @@
 
 class Button_eSPI
 {
- public:
+public:
   Button_eSPI(void);
   // "Classic" initButton() uses centre & size
-  void     initButton(TFT_eSPI *gfx, int16_t x, int16_t y,
-  uint16_t w, uint16_t h, uint16_t outline, uint16_t fill,
-  uint16_t textcolor, char *label, const GFXfont *textfont);
+  void initButton(TFT_eSPI *gfx, int16_t x, int16_t y,
+                  uint16_t w, uint16_t h, uint16_t outline, uint16_t fill, uint16_t pressedFill,
+                  uint16_t textcolor, char *label, const GFXfont *textfont);
 
   // New/alt initButton() uses upper-left corner & size
-  void     initButtonUL(TFT_eSPI *gfx, int16_t x1, int16_t y1,
-  uint16_t w, uint16_t h, uint16_t outline, uint16_t fill,
-  uint16_t textcolor, char *label, const GFXfont *textfont);
-  
+  void initButtonUL(TFT_eSPI *gfx, int16_t x1, int16_t y1,
+                    uint16_t w, uint16_t h, uint16_t outline, uint16_t fill, uint16_t pressedFill,
+                    uint16_t textcolor, char *label, const GFXfont *textfont);
+
   // Adjust text datum and x, y deltas
-  void     setLabelDatum(int16_t x_delta, int16_t y_delta, uint8_t datum = MC_DATUM);
-  
-  void     drawButton(bool inverted = false, String long_name = "");
-  bool     contains(int16_t x, int16_t y);
+  void setLabelDatum(int16_t x_delta, int16_t y_delta, uint8_t datum = MC_DATUM);
 
-  void     press(bool p);
-  bool     isPressed();
-  bool     justPressed();
-  bool     justReleased();
+  void drawButton(bool inverted = false, String long_name = "");
+  bool contains(int16_t x, int16_t y);
 
- private:
+  void press(bool p);
+  bool isPressed();
+  bool justPressed();
+  bool justReleased();
+
+private:
   TFT_eSPI *_gfx;
-  int16_t  _x1, _y1; // Coordinates of top-left corner of button
-  int16_t  _xd, _yd; // Button text datum offsets (wrt centre of button)
-  uint16_t _w, _h;   // Width and height of button
-  uint8_t  _textsize, _textdatum; // Text size multiplier and text datum for button
-  uint16_t _outlinecolor, _fillcolor, _textcolor;
-  char     _label[10]; // Button text is 9 chars maximum unless long_name used
+  int16_t _x1, _y1;              // Coordinates of top-left corner of button
+  int16_t _xd, _yd;              // Button text datum offsets (wrt centre of button)
+  uint16_t _w, _h;               // Width and height of button
+  uint8_t _textsize, _textdatum; // Text size multiplier and text datum for button
+  uint16_t _outlinecolor, _fillcolor, _pressedFillColor, _textcolor;
+  char _label[10]; // Button text is 9 chars maximum unless long_name used
 
-  bool  currstate, laststate; // Button states
-    const GFXfont *_textfont;
+  bool currstate, laststate; // Button states
+  const GFXfont *_textfont;
 };
