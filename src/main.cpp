@@ -109,7 +109,7 @@ float n1 = 0;               // Variable to compute the result
 float m1 = 0;               // Memory value
 String num = "0";           // Calculators result string
 
-/* Function header */
+/* Function headers */
 void draw();
 void initDraw();
 void keyHandler(char key);
@@ -175,8 +175,10 @@ void draw()
   tft.setCursor(screenWidth - marginX - 7 - tft.textWidth(num), 62);
   tft.print(num);
 
+  // if any nonzero value in memory variable?
   if(m1 != 0)
   {
+    // draw in first left position char 'M'
     tft.setFreeFont(&FreeMonoBold12pt7b);
     tft.setCursor(marginX + 7, 50);
     tft.print("M");  
@@ -209,7 +211,7 @@ void initDraw()
   for(uint8_t i=0; i<bnRowsCount; i++)
   {
       posY = fromTop + (buttonHeight * i)+(buttonSpace * i);
-      for(int j =0; j<bnColsCount; j++)
+      for(uint8_t j=0; j<bnColsCount; j++)
       { 
           buttons[bnCount] = new Button_eSPI();
           posX = marginX + (buttonWidth * j) + (buttonSpace * j);
