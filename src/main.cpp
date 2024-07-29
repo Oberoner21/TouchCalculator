@@ -81,7 +81,6 @@ const uint16_t screenWidth = tft.getViewportWidth();
 const uint16_t screenHeight = tft.getViewportHeight();
 
 // Colors
-const uint16_t TFT_GREY = 0x5AEB; 
 const uint16_t DARKBLUE = 0x22AE;         // Fill color calculators result area
 const uint16_t C1 = 0x02CD;               // Unpressed button fill color for number chars
 const uint16_t C2 = 0xE280;               // Pressed button fill color for all buttons
